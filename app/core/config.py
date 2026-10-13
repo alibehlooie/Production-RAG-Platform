@@ -11,4 +11,13 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+
+    APP_NAME: str = "Local AI RAG Platform"
+
+    DEMO_MODE_ENABLED: bool = True
+
+    DOCUMENT_WORKER_ENABLED: bool = True
+
+    
 settings = Settings()

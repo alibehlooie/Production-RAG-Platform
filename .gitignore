@@ -8,3 +8,30 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Secrets / local config (keep .env.example tracked)
+.env
+.env.*
+!.env.example
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Local data (uploads, vector store, DB dumps)
+data/
+uploads/
+storage/
+*.sqlite3
+*.db
+
+# Logs
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
