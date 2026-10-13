@@ -14,6 +14,7 @@ class Settings(BaseSettings):
 
 
     APP_NAME: str = "Local AI RAG Platform"
+    DATABASE_URL: str
 
     DEMO_MODE_ENABLED: bool = True
 
