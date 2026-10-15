@@ -28,7 +28,7 @@ class KnowledgeBase(Base):
         index=True
     )
     documents: Mapped[list["Document"]] = relationship(
-        back_populates="Document",
+        back_populates="knowledge_base",
         cascade="all, delete-orphan",
         passive_deletes=True
     )

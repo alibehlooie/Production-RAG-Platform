@@ -35,7 +35,7 @@ class Conversation(Base):
     )
 
     knowledge_base: Mapped["KnowledgeBase"] = relationship(
-        back_populates="conversations"
+        back_populates="conversation"
     )
     messages: Mapped[list["Message"]] = relationship(
         back_populates="conversation",
