@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     DEMO_MODE_ENABLED: bool = True
-
+    UPLOAD_STORAGE_PATH: Path = Path("storage/uploads")
     DOCUMENT_WORKER_ENABLED: bool = True
 
     
