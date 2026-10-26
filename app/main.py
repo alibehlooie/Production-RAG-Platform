@@ -7,7 +7,8 @@ from app.core.config import settings
 from collections.abc import AsyncIterator
 from app.services.document_worker import DocumentWorker
 from app.core.middleware import RequestLoggingMiddleware
-
+from app.api.documents import router as document_router
+from app.api.knowledge_base import router as knowledge_base_router
 # @asynccontextmanager
 # async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 #     stop_worker = asyncio.Event()
@@ -45,3 +46,5 @@ app = FastAPI(
 async def health_check():
     return {"status": "healthy"}
 
+app.include_router(knowledge_base_router)
+app.include_router(document_router)
