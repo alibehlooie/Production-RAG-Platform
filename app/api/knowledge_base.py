@@ -7,7 +7,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
-from app.rag.vector_store import VectorStoreError
 from app.schemas.knowledge_base import KnowledgeBaseCreate, KnowledgeBaseResponse
 from app.services.knowledge_base import (
     KnowledgeBaseAccessDeniedError,
@@ -122,10 +121,5 @@ async def delete_knowledge_base(
     except KnowledgeBaseNotFoundError as error:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=str(error),
-        ) from error
-    except VectorStoreError as error:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(error),
         ) from error

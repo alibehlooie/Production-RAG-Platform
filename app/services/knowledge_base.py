@@ -10,7 +10,6 @@ from app.core.config import settings
 from app.models.document import Document
 from app.models.knowledge_base import KnowledgeBase
 from app.models.user import User
-from app.rag.vector_store import VectorStoreError, VectorStoreService, get_vector_store
 
 
 class UserNotFoundError(ValueError):
@@ -24,15 +23,14 @@ class KnowledgeBaseNotFoundError(ValueError):
 class KnowledgeBaseAccessDeniedError(ValueError):
     """Raised when the authenticated user targets another user's data."""
 
+
 class KnowledgeBaseService:
     def __init__(
         self,
         session: AsyncSession,
-        vector_store: VectorStoreService | None = None,
         storage_path: Path | None = None,
     ) -> None:
         self._session = session
-        self._vector_store = vector_store
         self._storage_path = storage_path or settings.UPLOAD_STORAGE_PATH
 
     async def create(
@@ -90,14 +88,8 @@ class KnowledgeBaseService:
         documents_to_delete = result.all()
 
         try:
-            await self._get_vector_store().delete_knowledge_base_chunks(
-                knowledge_base_id
-            )
             await self._session.delete(knowledge_base)
             await self._session.commit()
-        except VectorStoreError:
-            await self._session.rollback()
-            raise
         except Exception:
             await self._session.rollback()
             raise
@@ -128,8 +120,3 @@ class KnowledgeBaseService:
             .offset(offset)
         )
         return list(result.scalars().all())
-
-    def _get_vector_store(self) -> VectorStoreService:
-        if self._vector_store is None:
-            self._vector_store = get_vector_store()
-        return self._vector_store

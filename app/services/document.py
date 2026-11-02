@@ -17,7 +17,7 @@ from app.models.document import Document, DocumentStatus
 from app.models.document_chunk import DocumentChunk
 from app.models.document_job import DocumentJob
 from app.models.knowledge_base import KnowledgeBase
-from app.rag.vector_store import VectorStoreError, VectorStoreService, get_vector_store
+from app.rag.embeddings import EmbeddingError, EmbeddingService, get_embedding_service
 from app.services.chunking import TextChunkingService
 from app.services.knowledge_base import KnowledgeBaseNotFoundError
 from app.services.text_extraction import DocumentExtractionError, TextExtractionService
@@ -66,7 +66,7 @@ class DocumentService:
         session: AsyncSession,
         extraction_service: TextExtractionService | None = None,
         chunking_service: TextChunkingService | None = None,
-        vector_store: VectorStoreService | None = None,
+        embedding_service: EmbeddingService | None = None,
         storage_path: Path | None = None,
     ) -> None:
         self._session = session
@@ -75,7 +75,7 @@ class DocumentService:
             chunk_size=1000,
             chunk_overlap=200,
         )
-        self._vector_store = vector_store
+        self._embedding_service = embedding_service
         self._storage_path = storage_path or settings.UPLOAD_STORAGE_PATH
 
     async def create_from_upload(
@@ -196,12 +196,8 @@ class DocumentService:
             )
 
         try:
-            await self._get_vector_store().delete_document_chunks(document_id)
             await self._session.delete(document)
             await self._session.commit()
-        except VectorStoreError:
-            await self._session.rollback()
-            raise
         except Exception:
             await self._session.rollback()
             raise
@@ -231,7 +227,6 @@ class DocumentService:
             )
 
         try:
-            await self._get_vector_store().delete_document_chunks(document_id)
             await self._session.execute(
                 delete(DocumentChunk).where(DocumentChunk.document_id == document_id)
             )
@@ -241,9 +236,6 @@ class DocumentService:
             self._session.add(DocumentJob(document_id=document.id))
             await self._session.commit()
             await self._session.refresh(document)
-        except VectorStoreError:
-            await self._session.rollback()
-            raise
         except Exception:
             await self._session.rollback()
             raise
@@ -269,7 +261,6 @@ class DocumentService:
                 "knowledge_base_id": knowledge_base_id,
             },
         )
-        qdrant_indexed = False
         try:
             text = await self._extraction_service.extract_path(
                 self._storage_file(document.id, document.filename),
@@ -280,19 +271,18 @@ class DocumentService:
                 raise DocumentExtractionError("Document contains no extractable text")
             chunks_count = len(chunk_contents)
 
+            embeddings = await self._get_embedding_service().embed_texts(chunk_contents)
+
             chunks = [
                 DocumentChunk(
                     document_id=document.id,
                     chunk_index=index,
                     content=content,
+                    embedding=embeddings[index],
                 )
                 for index, content in enumerate(chunk_contents)
             ]
             self._session.add_all(chunks)
-            await self._session.flush()
-
-            await self._get_vector_store().index_document_chunks(document, chunks)
-            qdrant_indexed = True
             document.status = DocumentStatus.INDEXED.value
             document.processed = True
             document.error_message = None
@@ -310,8 +300,6 @@ class DocumentService:
             )
         except Exception as error:
             await self._session.rollback()
-            if qdrant_indexed:
-                await self._compensate_qdrant(document_id)
             await self._mark_failed(document_id, error)
             logger.exception(
                 "document_indexing_failed",
@@ -364,15 +352,6 @@ class DocumentService:
                 document_id,
             )
 
-    async def _compensate_qdrant(self, document_id: uuid.UUID) -> None:
-        try:
-            await self._get_vector_store().delete_document_chunks(document_id)
-        except VectorStoreError:
-            logger.exception(
-                "Failed to remove vectors after database rollback for document %s",
-                document_id,
-            )
-
     async def _store_upload(self, file: UploadFile, destination: Path) -> None:
         await file.seek(0)
         try:
@@ -416,14 +395,14 @@ class DocumentService:
     def _public_error_message(error: Exception) -> str:
         if isinstance(error, DocumentExtractionError):
             return str(error)[:4000]
-        if isinstance(error, VectorStoreError):
-            return "Document embedding or vector indexing failed"
+        if isinstance(error, EmbeddingError):
+            return "Document embedding generation failed"
         return "Unexpected document processing error"
 
-    def _get_vector_store(self) -> VectorStoreService:
-        if self._vector_store is None:
-            self._vector_store = get_vector_store()
-        return self._vector_store
+    def _get_embedding_service(self) -> EmbeddingService:
+        if self._embedding_service is None:
+            self._embedding_service = get_embedding_service()
+        return self._embedding_service
 
     async def _document_belongs_to_user(
         self,

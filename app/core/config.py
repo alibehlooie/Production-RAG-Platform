@@ -18,7 +18,16 @@ class Settings(BaseSettings):
 
     DEMO_MODE_ENABLED: bool = True
     UPLOAD_STORAGE_PATH: Path = Path("storage/uploads")
-    DOCUMENT_WORKER_ENABLED: bool = True
+    UPLOAD_MAX_BYTES: int = 20 * 1024 * 1024  # 20 MB
 
-    
+    DOCUMENT_WORKER_ENABLED: bool = True
+    DOCUMENT_WORKER_POLL_SECONDS: float = 2.0
+    DOCUMENT_WORKER_STALE_AFTER_SECONDS: int = 300
+
+    EMBEDDING_BASE_URL: str = "http://localhost:1234/v1"
+    EMBEDDING_API_KEY: str = "lm-studio"
+    EMBEDDING_MODEL: str = "text-embedding-nomic-embed-text-v1.5"
+    EMBEDDING_DIMENSIONS: int = 768
+
+
 settings = Settings()

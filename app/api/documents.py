@@ -16,7 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.dependencies import get_current_user
 from app.db.session import get_db
 from app.models.user import User
-from app.rag.vector_store import VectorStoreError
 from app.schemas.document import (
     DocumentDetailResponse,
     DocumentStatusValue,
@@ -189,11 +188,6 @@ async def delete_document(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(error),
         ) from error
-    except VectorStoreError as error:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(error),
-        ) from error
 
 
 @router.post("/{document_id}/reindex", response_model=DocumentDetailResponse)
@@ -215,11 +209,6 @@ async def reindex_document(
     except DocumentAlreadyProcessingError as error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=str(error),
-        ) from error
-    except VectorStoreError as error:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(error),
         ) from error
 
