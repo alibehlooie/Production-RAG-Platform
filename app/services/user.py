@@ -12,8 +12,8 @@ class UserService:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
-    async def create(self, email: str) -> User:
-        user = User(email=email.strip().lower())
+    async def create(self, name: str, email: str) -> User:
+        user = User(name=name.strip(), email=email.strip().lower())
         self._session.add(user)
 
         try:

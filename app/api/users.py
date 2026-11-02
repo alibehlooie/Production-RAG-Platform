@@ -21,7 +21,10 @@ async def create_user(
     session: Annotated[AsyncSession, Depends(get_db)],
 ) -> UserResponse:
     try:
-        user = await UserService(session).create(str(request.email))
+        user = await UserService(session).create(
+            name=request.name,
+            email=str(request.email),
+        )
     except UserAlreadyExistsError as error:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
