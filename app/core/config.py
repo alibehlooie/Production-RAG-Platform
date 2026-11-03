@@ -17,6 +17,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str
 
     DEMO_MODE_ENABLED: bool = True
+    JWT_SECRET_KEY: str = "local-dev-secret-change-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
     UPLOAD_STORAGE_PATH: Path = Path("storage/uploads")
     UPLOAD_MAX_BYTES: int = 20 * 1024 * 1024  # 20 MB
 
